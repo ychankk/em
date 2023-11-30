@@ -4510,8 +4510,33 @@ sds writeCommandsGetDiskErrorMessage(int error_code) {
     return ret;
 }
 
+
+
 /* The PING command. It works in a different way if the client is in
  * in Pub/Sub mode. */
+void pangCommand(client* c) {
+    /* The command takes zero or one arguments. */
+    if (c->argc > 2) {
+        addReplyErrorArity(c);
+        return;
+    }
+
+    if (c->flags & CLIENT_PUBSUB && c->resp == 2) {
+        addReply(c, shared.mbulkhdr[2]);
+        addReplyBulkCBuffer(c, "pung", 4);
+        if (c->argc == 1)
+            addReplyBulkCBuffer(c, "", 0);
+        else
+            addReplyBulk(c, c->argv[1]);
+    }
+    else {
+        if (c->argc == 1)
+            addReply(c, shared.pung);
+        else
+            addReplyBulk(c, c->argv[1]);
+    }
+}
+
 void pingCommand(client *c) {
     /* The command takes zero or one arguments. */
     if (c->argc > 2) {
@@ -4534,27 +4559,6 @@ void pingCommand(client *c) {
     }
 }
 
-void pangCommand(client *c) {
-    /* The command takes zero or one arguments. */
-    if (c->argc > 2) {
-        addReplyErrorArity(c);
-        return;
-    }
-
-    if (c->flags & CLIENT_PUBSUB && c->resp == 2) {
-        addReply(c,shared.mbulkhdr[2]);
-        addReplyBulkCBuffer(c,"pung",4);
-        if (c->argc == 1)
-            addReplyBulkCBuffer(c,"",0);
-        else
-            addReplyBulk(c,c->argv[1]);
-    } else {
-        if (c->argc == 1)
-            addReply(c,shared.pung);
-        else
-            addReplyBulk(c,c->argv[1]);
-    }
-}
 
 void echoCommand(client *c) {
     addReplyBulk(c,c->argv[1]);
